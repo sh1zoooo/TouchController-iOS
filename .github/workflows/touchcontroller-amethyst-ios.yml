@@ -3,51 +3,6 @@ name: Build TouchController for Amethyst iOS
 on: [ pull_request, push, workflow_dispatch ]
 
 jobs:
-  debug_unified:
-    name: Debug unified build (temporary)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          java-version: "21"
-          distribution: "temurin"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
-
-      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
-        id: setup-ndk
-        with:
-          ndk-version: r28b
-
-      - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@8cb04a772ab4c1eb984e9c1b493a182e96c5e425 # 0.19.0
-        with:
-          repository-cache: MODULE.bazel.lock
-
-      - name: Build unified target
-        run: |
-          set -o pipefail
-          bazel build --verbose_failures --config=opt //touchcontroller 2>&1 | tee /tmp/build.log || {
-            tail -c 9000 /tmp/build.log | tr '\n\r%' '---' > /tmp/tail1.txt
-            split -b 850 /tmp/tail1.txt /tmp/tchunk_
-            for f in /tmp/tchunk_*; do echo "::error::$(cat "$f")"; done
-            tail -c 60000 /tmp/build.log | base64 -w0 > /tmp/build.log.b64
-            gh api --method PUT repos/${{ github.repository }}/contents/unified-build-failure.log \
-              -f message="[skip ci] CI debug: unified build failure log" \
-              -f content="$(cat /tmp/build.log.b64)" \
-              -f branch="${{ github.ref_name }}" || echo "::error::contents upload failed"
-            exit 1
-          }
-        env:
-          GH_TOKEN: ${{ github.token }}
-
   build_mod:
     name: Build Fabric 1.21.11 mod
     runs-on: macos-latest
@@ -91,7 +46,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: touchcontroller-fabric-1.21.11-ios
-          path: bazel-bin/touchcontroller/versions/fabric/1.21.11/fabric.jar
+          if-no-files-found: error
+          path: bazel-bin/touchcontroller/versions/fabric/1.21.11/remapped_fabric.jar
 
   build_ios_framework:
     name: Build iOS XCFramework and dylib
