@@ -50,8 +50,25 @@ Below are platforms TouchController supports:
 - [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2)
 - [Pojav Glow·Worm](https://github.com/Vera-Firefly/Pojav-Glow-Worm)
 - [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android)
+- [Amethyst iOS](https://github.com/AngelAuraMC/Amethyst-iOS)
 
-Support for touch screen for X11 on Linux may be added in the future. iOS support will be added in the future.
+Support for touch screen for X11 on Linux may be added in the future.
+
+On iOS (PojavLauncher-based launchers like Amethyst iOS), TouchController uses an
+in-process transport, which has to be provided by the launcher:
+
+- The launcher can statically link
+  [TouchController's XCFramework](https://github.com/TouchController/TouchController/actions/workflows/touchcontroller-amethyst-ios.yml)
+  into the app and exchange messages through `touchcontroller_ios_send` /
+  `touchcontroller_ios_receive` (declared in `touchcontroller/proxy/server/ios/ios.h`);
+- Or the mod loads a dylib bundled in the mod JAR (`proxy_server_ios_ios_aarch64/libproxy_server_ios.dylib`,
+  included in JARs built on macOS), which requires the launcher to allow loading external
+  dynamic libraries, for example with TrollStore or a jailbroken device.
+
+If the launcher doesn't provide its own touch input, it can also drive the mod with the
+legacy UDP transport: set the `TOUCH_CONTROLLER_PROXY` environment variable to a free UDP
+port, bind a UDP socket on `::1` (IPv6 loopback) and send [proxy protocol](https://github.com/TouchController/TouchController/blob/master/touchcontroller/proxy/message/ProxyMessage.kt)
+messages to it. Setting `TOUCH_CONTROLLER_PLATFORM=ios` forces the iOS platform selection.
 
 ## Features supported by now
 
@@ -120,8 +137,23 @@ TouchController.
 - [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2)
 - [Pojav Glow·Worm](https://github.com/Vera-Firefly/Pojav-Glow-Worm)
 - [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android)
+- [Amethyst iOS](https://github.com/AngelAuraMC/Amethyst-iOS)
 
-在未来可能会添加 Linux 上 X11 触屏的支持。未来会加入 iOS 支持。
+在未来可能会添加 Linux 上 X11 触屏的支持。
+
+在 iOS 上（基于 PojavLauncher 的启动器，例如 Amethyst iOS），TouchController 使用进程内通信，通信通道由启动器提供：
+
+- 启动器可以把 TouchController 的
+  [XCFramework](https://github.com/TouchController/TouchController/actions/workflows/touchcontroller-amethyst-ios.yml)
+  静态链接进应用内，然后通过 `touchcontroller_ios_send` / `touchcontroller_ios_receive`
+  （声明于 `touchcontroller/proxy/server/ios/ios.h`）收发消息；
+- 或者由 mod 加载 mod JAR 内置的 dylib（`proxy_server_ios_ios_aarch64/libproxy_server_ios.dylib`，
+  在 macOS 上构建的 JAR 才包含），这要求启动器允许加载外部动态库，例如使用 TrollStore 或越狱设备。
+
+如果启动器不提供自己的触屏输入，也可以使用旧版 UDP 通道驱动 mod：设置 `TOUCH_CONTROLLER_PROXY`
+环境变量为一个空闲的 UDP 端口，在 `::1`（IPv6 回环地址）上绑定 UDP 套接字，并向它发送
+[代理协议](https://github.com/TouchController/TouchController/blob/master/touchcontroller/proxy/message/ProxyMessage.kt)消息。
+设置 `TOUCH_CONTROLLER_PLATFORM=ios` 可以强制选择 iOS 平台。
 
 ## 目前支持的功能
 

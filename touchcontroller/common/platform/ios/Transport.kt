@@ -5,7 +5,11 @@
 
 package top.fifthlight.touchcontroller.common.platform.ios
 
+import org.slf4j.LoggerFactory
+
 object Transport {
+    private val logger = LoggerFactory.getLogger(Transport::class.java)
+
     @JvmStatic
     private external fun init()
     @JvmStatic
@@ -13,8 +17,37 @@ object Transport {
     @JvmStatic
     external fun send(buffer: ByteArray, off: Int, len: Int)
 
-    init {
-        // TODO: deal with NeoForge
-        init()
+    private var initialized = false
+
+    /**
+     * Initialize the native transport between the game and the iOS launcher.
+     *
+     * The JNI implementation may come from two places:
+     *
+     * - The launcher statically links TouchController's XCFramework into its executable
+     *   (the recommended way, e.g. for launchers like Amethyst iOS), so the symbols are
+     *   already present in the process.
+     * - Otherwise, the dylib bundled inside the mod JAR is extracted and loaded with
+     *   `System.load`. This only works when the launcher allows loading external dynamic
+     *   libraries (for example TrollStore's "no library validation" entitlement, or a
+     *   jailbroken device).
+     */
+    fun ensureInitialized() {
+        if (initialized) {
+            return
+        }
+        synchronized(this) {
+            if (initialized) {
+                return
+            }
+            try {
+                init()
+            } catch (e: UnsatisfiedLinkError) {
+                logger.info("TouchController iOS transport isn't linked into the launcher, try loading the bundled dylib")
+                IosLibraryLoader.loadBundledLibrary()
+                init()
+            }
+            initialized = true
+        }
     }
 }

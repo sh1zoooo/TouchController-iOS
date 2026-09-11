@@ -24,7 +24,12 @@ kt_merge_library(
         ":proxy_server_windows_legacy",
         ":proxy_server_android",
         ":proxy_server_native_bridge",
-    ],
+    ] + select({
+        # The iOS dylib can only be cross-compiled on a macOS host with Xcode, so
+        # it is only bundled into the mod JARs built on macOS.
+        "@platforms//os:macos": ["//touchcontroller/proxy/server/ios:proxy_server_ios"],
+        "//conditions:default": [],
+    }),
     visibility = ["//touchcontroller:__subpackages__"],
     deps = [
         "//blazesdl/api",

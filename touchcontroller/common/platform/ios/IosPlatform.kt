@@ -24,6 +24,12 @@ class IosPlatform : LargeMessageWrappedPlatform() {
 
     private val readBuffer = ByteArray(256)
 
+    override fun init() {
+        // Make sure the transport is ready before any message is exchanged, in case
+        // this platform was created without going through PlatformProvider.
+        Transport.ensureInitialized()
+    }
+
     override fun pollSmallEvent(): ProxyMessage? {
         val receivedLength = Transport.receive(readBuffer)
         val length = receivedLength.takeIf { it > 0 } ?: return null

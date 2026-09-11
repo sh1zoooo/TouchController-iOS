@@ -1,5 +1,6 @@
 load("@rules_apple//apple:apple.bzl", "apple_static_xcframework")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//rule:jni_library.bzl", "cc_jni_library")
 
 cc_library(
     name = "ios",
@@ -13,6 +14,19 @@ cc_library(
         "//touchcontroller/proxy/server/util/ringbuffer",
         "@rules_jni//jni",
     ],
+)
+
+# A standalone dylib variant of the transport, bundled inside the mod JAR so launchers
+# that don't statically link the XCFramework can still load it from the game side.
+# This target can only be built on a macOS host with Xcode installed.
+cc_jni_library(
+    name = "proxy_server_ios",
+    platforms = [
+        "@//platforms:ios_arm64",
+    ],
+    shared_lib_name = "libproxy_server_ios.dylib",
+    visibility = ["//touchcontroller:__subpackages__"],
+    deps = [":ios"],
 )
 
 apple_static_xcframework(

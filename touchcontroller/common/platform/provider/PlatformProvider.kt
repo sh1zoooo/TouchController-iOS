@@ -13,6 +13,7 @@ import top.fifthlight.touchcontroller.common.gal.window.PlatformWindowProvider
 import top.fifthlight.touchcontroller.common.gal.window.PlatformWindow
 import top.fifthlight.touchcontroller.common.platform.Platform
 import top.fifthlight.touchcontroller.common.platform.ios.IosPlatform
+import top.fifthlight.touchcontroller.common.platform.ios.Transport
 import top.fifthlight.touchcontroller.common.platform.proxy.ProxyPlatform
 import top.fifthlight.touchcontroller.common.platform.sdl.SdlPlatform
 import top.fifthlight.touchcontroller.proxy.server.localhostLauncherSocketProxyServer
@@ -46,10 +47,16 @@ object PlatformProvider {
     }
 
     val isIos: Boolean by lazy {
+        // Launchers (e.g. Amethyst iOS) may force the platform explicitly.
+        if (System.getenv("TOUCH_CONTROLLER_PLATFORM")?.equals("ios", ignoreCase = true) == true) {
+            return@lazy true
+        }
         if (systemName.contains("iOS", ignoreCase = true)) {
             return@lazy true
         }
-        // Check if running on iOS by detecting /var/mobile (iOS-specific path)
+        // Many JVM builds for iOS (including the one shipped with PojavLauncher-based
+        // launchers like Amethyst iOS) report `os.name` as "Mac OS X", so also detect
+        // iOS by checking an iOS-specific path.
         val iosPath = Paths.get("/", "var", "mobile")
         try {
             iosPath.exists()
@@ -86,6 +93,28 @@ object PlatformProvider {
             }
         }
 
+    /**
+     * Load the platform used on iOS devices (for example inside Amethyst iOS).
+     *
+     * The native transport is either statically linked into the launcher (launchers may
+     * embed TouchController's XCFramework), or bundled in the mod JAR as a dylib and
+     * loaded by [Transport.ensureInitialized]. If neither is available, return null so
+     * the game keeps running without touch support instead of crashing.
+     */
+    private fun loadIosPlatform(): (() -> Platform)? {
+        try {
+            Transport.ensureInitialized()
+        } catch (e: Throwable) {
+            logger.warn("Failed to initialize TouchController iOS transport, TouchController will be disabled", e)
+            return null
+        }
+        return {
+            IosPlatform().also { platform ->
+                platform.resize(PlatformWindowProvider.windowWidth, PlatformWindowProvider.windowHeight)
+            }
+        }
+    }
+
     internal fun loadPlatform(): (() -> Platform)? {
         if (hasBlazeSDL) {
             BlazeSDLAPI.getInstance()?.let { api ->
@@ -113,9 +142,7 @@ object PlatformProvider {
         val platformWindow = PlatformWindowProvider.platform
 
         if (isIos) {
-            IosPlatform().also { platform ->
-                platform.resize(PlatformWindowProvider.windowWidth, PlatformWindowProvider.windowHeight)
-            }
+            loadIosPlatform()?.let { return it }
         }
 
         NativeLibraryLoader.probeNativeLibraryInfo(platformWindow)?.let { info ->
