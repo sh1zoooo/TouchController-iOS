@@ -35,11 +35,14 @@ jobs:
         run: |
           set -o pipefail
           bazel build --verbose_failures --config=opt //touchcontroller 2>&1 | tee /tmp/build.log || {
+            tail -c 9000 /tmp/build.log | tr '\n\r%' '---' > /tmp/tail1.txt
+            split -b 850 /tmp/tail1.txt /tmp/tchunk_
+            for f in /tmp/tchunk_*; do echo "::error::$(cat "$f")"; done
             tail -c 60000 /tmp/build.log | base64 -w0 > /tmp/build.log.b64
-            gh api --method PUT repos/${{ github.repository }}/contents/ci-debug/unified-build-failure.log \
+            gh api --method PUT repos/${{ github.repository }}/contents/unified-build-failure.log \
               -f message="[skip ci] CI debug: unified build failure log" \
               -f content="$(cat /tmp/build.log.b64)" \
-              -f branch="ci-debug-logs" || true
+              -f branch="${{ github.ref_name }}" || echo "::error::contents upload failed"
             exit 1
           }
         env:
