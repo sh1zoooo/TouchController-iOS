@@ -479,7 +479,7 @@
     },
     "net.fabricmc.fabric-api:fabric-transitive-access-wideners-v1": {
       "shasums": {
-        "jar": "2f43dfbe59c52a806b6a83ed9008598ba8f285f150c32c0ebca0d1b8a4f8b431",
+        "jar": "2bc386860849d0814ff42e1435b17211e9578e749d9d41e3b81f604f26f6be08",
         "sources": "9143e38983a92b8bc0ff3f119c40ecf8882829cecc3ba994f9a9b86526db1f3d"
       },
       "version": "6.2.0+45b9699719"
