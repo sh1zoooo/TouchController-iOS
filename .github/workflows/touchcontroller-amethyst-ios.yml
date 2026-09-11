@@ -37,17 +37,37 @@ jobs:
           downloader_cfg: ${{ vars.BAZEL_DOWNLOADER_CONFIG }}
           netrc: ${{ secrets.BAZEL_NETRC }}
 
+      # Some pinned artifacts (e.g. Fabric 1.21.1) were re-published upstream with
+      # different bytes, which breaks checksum validation on fresh builds. Re-pin
+      # them the sanctioned way and push the regenerated lock file.
+      - name: Repin stale maven artifacts
+        run: |
+          REPIN=1 bazel run @maven_fabric_1_21_1//:pin
+
+      - name: Push repinned lock file
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No pin changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "[build] Repin Fabric 1.21.1 maven artifacts [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}"
+
+      # The shippable Fabric JAR (all versions, dependencies JAR-in-JAR).
       # Building on macOS also bundles the iOS transport dylib into the JAR,
       # so this build can be used with Amethyst iOS directly.
       - name: Build
-        run: bazel build --verbose_failures --config=opt --jobs=4 //touchcontroller/versions/fabric/1.21.11
+        run: bazel build --verbose_failures --config=opt --jobs=4 //touchcontroller/fabric
 
       - name: Upload mod artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: touchcontroller-fabric-1.21.11-ios
+          name: touchcontroller-fabric-ios
           if-no-files-found: error
-          path: bazel-bin/touchcontroller/versions/fabric/1.21.11/remapped_fabric.jar
+          path: bazel-bin/touchcontroller/fabric/fabric.jar
 
   build_ios_framework:
     name: Build iOS XCFramework and dylib
