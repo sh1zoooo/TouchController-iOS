@@ -110,13 +110,16 @@ object PlatformProvider {
 
         logger.info("System name: $systemName, system arch: $systemArch")
 
-        val platformWindow = PlatformWindowProvider.platform
-
         if (isIos) {
-            IosPlatform().also { platform ->
-                platform.resize(PlatformWindowProvider.windowWidth, PlatformWindowProvider.windowHeight)
-            }
+            // iOS launchers (Amethyst and other PojavLauncher derivatives) run the game
+            // in-process and register the native transport themselves, so there is no
+            // native library to probe. Handled before PlatformWindowProvider is touched
+            // because GLFW is not usable this early on iOS.
+            logger.info("iOS detected, using the in-process iOS transport")
+            return { IosPlatform() }
         }
+
+        val platformWindow = PlatformWindowProvider.platform
 
         NativeLibraryLoader.probeNativeLibraryInfo(platformWindow)?.let { info ->
             logger.info("Native library info:")

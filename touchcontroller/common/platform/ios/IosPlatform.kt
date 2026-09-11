@@ -24,7 +24,14 @@ class IosPlatform : LargeMessageWrappedPlatform() {
 
     private val readBuffer = ByteArray(256)
 
+    override fun init() {
+        Transport.initialize()
+    }
+
     override fun pollSmallEvent(): ProxyMessage? {
+        if (!Transport.available) {
+            return null
+        }
         val receivedLength = Transport.receive(readBuffer)
         val length = receivedLength.takeIf { it > 0 } ?: return null
         val buffer = ByteBuffer.wrap(readBuffer)
@@ -42,6 +49,9 @@ class IosPlatform : LargeMessageWrappedPlatform() {
     }
 
     override fun sendSmallEvent(message: ProxyMessage) {
+        if (!Transport.available) {
+            return
+        }
         val buffer = ByteBuffer.allocate(256)
         message.encode(buffer)
         buffer.flip()
