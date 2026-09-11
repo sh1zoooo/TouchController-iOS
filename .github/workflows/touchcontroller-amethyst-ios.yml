@@ -35,12 +35,15 @@ jobs:
         run: |
           set -o pipefail
           bazel build --verbose_failures --config=opt //touchcontroller 2>&1 | tee /tmp/build.log || {
-            echo '### Bazel failure tail' >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            tail -c 10000 /tmp/build.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -c 60000 /tmp/build.log | base64 -w0 > /tmp/build.log.b64
+            gh api --method PUT repos/${{ github.repository }}/contents/ci-debug/unified-build-failure.log \
+              -f message="[skip ci] CI debug: unified build failure log" \
+              -f content="$(cat /tmp/build.log.b64)" \
+              -f branch="ci-debug-logs" || true
             exit 1
           }
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   build_mod:
     name: Build Fabric 1.21.11 mod
