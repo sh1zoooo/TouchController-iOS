@@ -36,6 +36,9 @@ object WindowHandleImpl : WindowHandle {
     override val mouseLeftPressed: Boolean
         get() = client.mouseHandler.isLeftPressed
 
+    override val mouseRightPressed: Boolean
+        get() = client.mouseHandler.isRightPressed
+
     override val mousePosition: Offset
         get() = Offset(
             x = client.mouseHandler.xpos().toFloat(),

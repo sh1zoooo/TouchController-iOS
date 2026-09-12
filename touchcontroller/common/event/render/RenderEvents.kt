@@ -152,12 +152,15 @@ object RenderEvents {
         }
 
         // On iOS, launchers without TouchController integration (e.g. Amethyst iOS)
-        // feed touches as mouse events: tap = short left click, long press = held
-        // left button with cursor movement. Turn them into a touch pointer so the
-        // on-screen controls work out of the box.
+        // feed touches as mouse events: a long press is a held left button with
+        // cursor movement, while a quick tap in-game (with the cursor grabbed) is
+        // sent as a right click. Turn both into a touch pointer so the on-screen
+        // controls and camera dragging work out of the box.
         if (config.debug.enableTouchEmulation || PlatformProvider.isIos) {
             val mousePosition = window.mousePosition
-            if (window.mouseLeftPressed && mousePosition != null) {
+            val emulatedPointerPressed =
+                window.mouseLeftPressed || (!GameState.inGui && window.mouseRightPressed)
+            if (emulatedPointerPressed && mousePosition != null) {
                 touchStateModel.addPointer(
                     index = 0,
                     position = mousePosition / window.size.toSize()

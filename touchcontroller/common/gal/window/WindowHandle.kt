@@ -13,6 +13,16 @@ interface WindowHandle {
     val size: IntSize
     val scaledSize: IntSize
     val mouseLeftPressed: Boolean
+
+    /**
+     * Whether the right mouse button is currently pressed.
+     *
+     * Some launchers (e.g. Amethyst iOS) send a quick tap in-game as a right mouse
+     * click, so the touch emulation also has to watch this button.
+     */
+    val mouseRightPressed: Boolean
+        get() = false
+
     val mousePosition: Offset?
 
     @ExpectFactory
